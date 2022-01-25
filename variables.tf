@@ -4,21 +4,39 @@ variable "container_name" {
   default = "postgresql"
 }
 
-variable "container_user_or_uid" {
-  description = "The user name or UID the container will use."
+variable "container_user" {
+  description = "The user name the container will use. Mutually exclusive with container_uid."
   type = string
   default = null
 }
 
-variable "container_group_or_gid" {
-  description = "The group name or GID the container will use."
+variable "container_uid" {
+  description = "The user id the container will use. Mutually exclusive with container_user."
+  type = number
+  default = null
+}
+
+variable "container_group" {
+  description = "The group name or GID the container will use. Mutually exclusive with container_gid."
   type = string
+  default = null
+}
+
+variable "container_gid" {
+  description = "The group GID the container will use. Mutually exclusive with container_group."
+  type = number
   default = null
 }
 
 variable "image_uri" {
   description = "Container image tag in the form image:tag."
   type = string
+}
+
+variable "labels" {
+  description = "Labels to apply to the container."
+  type = list(string)
+  default = []
 }
 
 variable "ports" {

@@ -1,6 +1,11 @@
+locals {
+  container_user_or_uid = "%{ if var.container_user != null }${var.container_user}%{ else }%{ if var.container_uid != null }${var.container_uid}%{ else }%{ endif }%{ endif }"
+  container_group_or_gid = "%{ if var.container_group != null }${var.container_group}%{ else }%{ if var.container_gid != null }${var.container_gid}%{ else }%{ endif }%{ endif }"
+}
+
 # Universal systemd service file
 data template_file "universal_service" {
-  template = <<EOS
+  template = <<-EOS
     [Unit]
     Description=${var.container_name}
     After=network-online.target
@@ -14,6 +19,9 @@ data template_file "universal_service" {
     ExecStartPre=/bin/podman stop ${var.container_name} --ignore
     ExecStartPre=/bin/podman rm ${var.container_name} --ignore
     ExecStart=/bin/podman run \
+      %{~ for label in var.labels ~}
+      --label ${label} \
+      %{~ endfor ~}
       %{~ for environment_variable in keys(var.environment_variables) ~}
       -e ${environment_variable}="${var.environment_variables[environment_variable]}" \
       %{~ endfor ~}
@@ -23,7 +31,9 @@ data template_file "universal_service" {
       %{~ for port in var.ports ~}
       -p ${port.host_port}:${port.container_port} \
       %{~ endfor ~}
-      %{ if var.container_user_or_uid != null}--user ${var.container_user_or_uid}%{ if var.container_group_or_gid != null}:${var.container_group_or_gid}%{endif} \%{endif}
+      %{~ if local.container_user_or_uid != "" ~}
+      --user ${local.container_user_or_uid}%{~ if local.container_group_or_gid != "" ~}:${local.container_group_or_gid}%{~ endif ~} \
+      %{~ endif ~}
       --rm \
       --name ${var.container_name} \
       ${var.image_uri}
@@ -38,7 +48,7 @@ data template_file "universal_service" {
 
 # Ignition contents
 data template_file "ignition" {
-  template = <<EOI
+  template = <<-EOI
     {
       "ignition": {
         "version": "3.3.0"
