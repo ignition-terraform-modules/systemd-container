@@ -1,7 +1,7 @@
 variable "container_name" {
   description = "The name of the container."
   type = string
-  default = "postgresql"
+  default = "universal-container"
 }
 
 variable "container_user" {
@@ -45,22 +45,13 @@ variable "ports" {
     host_port = number
     container_port = number
   }))
-  default = [
-    {
-      host_port: 8080
-      container_port: 80
-    }
-  ]
+  default = []
 }
 
 variable "environment_variables" {
   description = "Additional environment variables to set inside the container."
   type = map(string)
-  default = {
-    POSTGRES_USER = "admin"
-    POSTGRES_PASSWORD = "postgresql"
-    POSTGRES_DB = "database"
-  }
+  default = {}
 }
 
 variable "volume_binds" {
@@ -70,13 +61,13 @@ variable "volume_binds" {
     container_dir = string
     options = optional(string)
   }))
-  default = [
-    {
-      host_dir      = "/var/mnt/postgresql_data"
-      container_dir = "/var/lib/postgresql/data"
-      options = "U,Z"
-    }
-  ]
+  default = []
+}
+
+variable "args" {
+  description = "Arguments to pass to the container when executing podman run."
+  type = string
+  default = null
 }
 
 variable "files" {
