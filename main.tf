@@ -36,10 +36,7 @@ data template_file "universal_service" {
       %{~ endif ~}
       --rm \
       --name ${var.container_name} \
-      ${var.image_uri} \
-      %{~ if var.args != null ~}
-      ${var.args}
-      %{~ endif ~}
+      ${var.image_uri} %{ if var.args != null }${var.args}%{ endif }
     ExecStop=-/usr/bin/podman stop ${var.container_name} --ignore
     ExecStopPost=-/usr/bin/podman rm ${var.container_name} --ignore
 
