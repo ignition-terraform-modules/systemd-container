@@ -22,9 +22,7 @@ data template_file "universal_service" {
       %{~ for label in var.labels ~}
       --label ${label} \
       %{~ endfor ~}
-      %{~ for environment_variable in keys(var.environment_variables) ~}
-      -e ${environment_variable}="${var.environment_variables[environment_variable]}" \
-      %{~ endfor ~}
+      --env-file /etc/${var.container_name}/${var.container_name}.env \
       %{~ for volume_bind in var.volume_binds ~}
       -v ${volume_bind.host_dir}:${volume_bind.container_dir}%{ if volume_bind.options != null }:${volume_bind.options}%{ endif } \
       %{~ endfor ~}
@@ -45,6 +43,13 @@ data template_file "universal_service" {
     EOS
 }
 
+data template_file "container_env" {
+    template = <<-EOE
+      %{ for environment_variable in keys(var.environment_variables) }
+      ${environment_variable}="${var.environment_variables[environment_variable]}"
+      %{ endfor }
+    EOE
+}
 
 # Ignition contents
 data template_file "ignition" {
@@ -58,18 +63,18 @@ data template_file "ignition" {
     %{~ for idx, directory in var.directories ~}
           {
             "user": {
-    %{~ if directory.user_uid != null ~}
-              "id": ${directory.user_uid}
+    %{~ if directory.uid != null ~}
+              "id": ${directory.uid}
     %{~ endif ~}
-    %{~ if directory.user_uid == null && directory.user_name != null ~}
+    %{~ if directory.uid == null && directory.user_name != null ~}
               "name": "${directory.user_name}"
     %{~ endif ~}
             },
             "group": {
-    %{~ if directory.group_uid != null ~}
-              "id": ${directory.group_uid}
+    %{~ if directory.gid != null ~}
+              "id": ${directory.gid}
     %{~ endif ~}
-    %{~ if directory.group_uid == null && directory.group_name != null ~}
+    %{~ if directory.gid == null && directory.group_name != null ~}
               "name": "${directory.group_name}"
     %{~ endif ~}
             },
@@ -83,18 +88,18 @@ data template_file "ignition" {
     %{~ for idx, file in var.files ~}
           {
             "user": {
-    %{~ if file.user_uid != null ~}
-              "id": ${file.user_uid}
+    %{~ if file.uid != null ~}
+              "id": ${file.uid}
     %{~ endif ~}
-    %{~ if file.user_uid == null && file.user_name != null ~}
+    %{~ if file.uid == null && file.user_name != null ~}
               "name": "${file.user_name}"
     %{~ endif ~}
             },
             "group": {
-    %{~ if file.group_uid != null ~}
-              "id": ${file.group_uid}
+    %{~ if file.gid != null ~}
+              "id": ${file.gid}
     %{~ endif ~}
-    %{~ if file.group_uid == null && file.group_name != null ~}
+    %{~ if file.gid == null && file.group_name != null ~}
               "name": "${file.group_name}"
     %{~ endif ~}
             },
@@ -104,8 +109,32 @@ data template_file "ignition" {
               "source": "data:text/plain;base64,${base64encode(file.contents)}"
             },
             "mode": ${file.decimal_mode}
-          }%{~ if idx + 1 != length(var.files) ~},%{~ endif ~}
+          },
     %{~ endfor ~}
+          {
+            "user": {
+    %{~ if var.container_uid != null ~}
+              "id": ${var.container_uid}
+    %{~ endif ~}
+    %{~ if var.container_uid == null && var.container_user != null ~}
+              "name": "${var.container_user}"
+    %{~ endif ~}
+            },
+            "group": {
+    %{~ if var.container_gid != null ~}
+              "id": ${var.container_gid}
+    %{~ endif ~}
+    %{~ if var.container_gid  == null && var.container_group != null ~}
+              "name": "${var.container_group}"
+    %{~ endif ~}
+            },
+            "path": "/etc/${var.container_name}/${var.container_name}.env",
+            "overwrite": true,
+            "contents": {
+              "source": "data:text/plain;base64,${base64encode(data.template_file.container_env.rendered)}"
+            },
+            "mode": 288
+          }
         ]
       },
       "systemd": {

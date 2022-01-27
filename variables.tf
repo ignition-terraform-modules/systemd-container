@@ -52,6 +52,7 @@ variable "environment_variables" {
   description = "Additional environment variables to set inside the container."
   type = map(string)
   default = {}
+  sensitive = true
 }
 
 variable "volume_binds" {
@@ -68,6 +69,7 @@ variable "args" {
   description = "Arguments to pass to the container when executing podman run."
   type = string
   default = null
+  sensitive = true
 }
 
 variable "files" {
@@ -76,12 +78,13 @@ variable "files" {
     path = string
     contents = string
     decimal_mode = string
-    user_uid = optional(number)
+    uid = optional(number)
     user_name = optional(string)
-    group_uid = optional(number)
+    gid = optional(number)
     group_name = optional(string)
   }))
   default = []
+  sensitive = true
 }
 
 variable "directories" {
@@ -89,9 +92,9 @@ variable "directories" {
   type = list(object({
     path = string
     decimal_mode = string
-    user_uid = optional(number)
+    uid = optional(number)
     user_name = optional(string)
-    group_uid = optional(number)
+    gid = optional(number)
     group_name = optional(string)
   }))
   default = []
