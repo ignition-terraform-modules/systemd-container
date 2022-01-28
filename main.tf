@@ -10,7 +10,7 @@ data template_file "universal_service" {
     Description=${var.container_name}
     After=network-online.target
     Wants=network-online.target
-    %{~ for target in var.systemd_afters ~}
+    %{~ for target in var.container_systemd_afters ~}
     After=${target}
     %{~ endfor ~}
 
@@ -19,14 +19,14 @@ data template_file "universal_service" {
     ExecStartPre=/bin/podman stop ${var.container_name} --ignore
     ExecStartPre=/bin/podman rm ${var.container_name} --ignore
     ExecStart=/bin/podman run \
-      %{~ for label in var.labels ~}
+      %{~ for label in var.container_labels ~}
       --label ${label} \
       %{~ endfor ~}
       --env-file /etc/${var.container_name}/${var.container_name}.env \
-      %{~ for volume_bind in var.volume_binds ~}
+      %{~ for volume_bind in var.container_volume_binds ~}
       -v ${volume_bind.host_dir}:${volume_bind.container_dir}%{ if volume_bind.options != null }:${volume_bind.options}%{ endif } \
       %{~ endfor ~}
-      %{~ for port in var.ports ~}
+      %{~ for port in var.container_ports ~}
       -p ${port.host_port}:${port.container_port} \
       %{~ endfor ~}
       %{~ if local.container_user_or_uid != "" ~}
@@ -34,7 +34,7 @@ data template_file "universal_service" {
       %{~ endif ~}
       --rm \
       --name ${var.container_name} \
-      ${var.image_uri} %{ if var.args != null }${var.args}%{ endif }
+      ${var.container_image_uri} %{ if var.container_args != null }${var.container_args}%{ endif }
     ExecStop=-/usr/bin/podman stop ${var.container_name} --ignore
     ExecStopPost=-/usr/bin/podman rm ${var.container_name} --ignore
 
@@ -43,10 +43,27 @@ data template_file "universal_service" {
     EOS
 }
 
+data template_file "data_disk_mount" {
+  template = <<-EOM
+    [Unit]
+    Before=local-fs.target
+    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.data_disk.label}.service
+    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.data_disk.label}.service
+
+    [Mount]
+    Where=${var.data_disk.mount_path}
+    What=/dev/disk/by-partlabel/${var.data_disk.label}
+    Type=xfs
+
+    [Install]
+    RequiredBy=local-fs.target
+    EOM
+}
+
 data template_file "container_env" {
     template = <<-EOE
-      %{ for environment_variable in keys(var.environment_variables) }
-      ${environment_variable}="${var.environment_variables[environment_variable]}"
+      %{ for environment_variable in keys(var.container_environment_variables) }
+      ${environment_variable}="${var.container_environment_variables[environment_variable]}"
       %{ endfor }
     EOE
 }
@@ -60,7 +77,7 @@ data template_file "ignition" {
       },
       "storage": {
         "directories": [
-    %{~ for idx, directory in var.directories ~}
+    %{~ for idx, directory in var.coreos_directories ~}
           {
             "user": {
     %{~ if directory.uid != null ~}
@@ -81,11 +98,11 @@ data template_file "ignition" {
             "path": "${directory.path}",
             "overwrite": false,
             "mode": ${directory.decimal_mode}
-          }%{~ if idx + 1 != length(var.files) ~},%{~ endif ~}
+          }%{~ if idx + 1 != length(var.coreos_files) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
         "files": [
-    %{~ for idx, file in var.files ~}
+    %{~ for idx, file in var.coreos_files ~}
           {
             "user": {
     %{~ if file.uid != null ~}
