@@ -30,7 +30,7 @@ data template_file "universal_service" {
       -p ${port.host_port}:${port.container_port} \
       %{~ endfor ~}
       %{~ if local.container_user_or_uid != "" ~}
-      --user ${local.container_user_or_uid}%{~ if local.container_group_or_gid != "" ~}:${local.container_group_or_gid}%{~ endif ~} \
+      --user ${local.container_user_or_uid}%{ if local.container_group_or_gid != "" }:${local.container_group_or_gid}%{ endif } \
       %{~ endif ~}
       --rm \
       --name ${var.container_name} \
@@ -44,15 +44,16 @@ data template_file "universal_service" {
 }
 
 data template_file "data_disk_mount" {
+  count = length(var.coreos_disks)
   template = <<-EOM
     [Unit]
     Before=local-fs.target
-    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.data_disk.label}.service
-    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.data_disk.label}.service
+    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
+    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
 
     [Mount]
-    Where=${var.data_disk.mount_path}
-    What=/dev/disk/by-partlabel/${var.data_disk.label}
+    Where=${var.coreos_disks[count.index].mount_path}
+    What=/dev/disk/by-partlabel/${var.coreos_disks[count.index].label}
     Type=xfs
 
     [Install]
@@ -63,12 +64,13 @@ data template_file "data_disk_mount" {
 data template_file "container_env" {
     template = <<-EOE
       %{ for environment_variable in keys(var.container_environment_variables) }
-      ${environment_variable}="${var.container_environment_variables[environment_variable]}"
+      ${environment_variable}=${var.container_environment_variables[environment_variable]}
       %{ endfor }
     EOE
 }
 
 # Ignition contents
+# https://coreos.github.io/ignition/configuration-v3_3/
 data template_file "ignition" {
   template = <<-EOI
     {
@@ -76,6 +78,32 @@ data template_file "ignition" {
         "version": "3.3.0"
       },
       "storage": {
+        "disks": [
+    %{~ for idx, disk in var.coreos_disks ~}
+          {
+            "device": "${disk.device}",
+            "wipeTable": false,
+            "partitions": [
+              {
+                "label": "${disk.label}",
+                "number": 1,
+                "sizeMiB": 0,
+                "startMiB": 0
+              }
+            ]
+          }%{~ if idx + 1 != length(var.coreos_disks) ~},%{~ endif ~}
+    %{~ endfor ~}
+        ],
+        "filesystems": [
+    %{~ for idx, disk in var.coreos_disks ~}
+          {
+            "device": "/dev/disk/by-partlabel/${disk.label}",
+            "format": "xfs",
+            "wipeFilesystem": false,
+            "path": "${disk.mount_path}"
+          }%{~ if idx + 1 != length(var.coreos_disks) ~},%{~ endif ~}
+    %{~ endfor ~}
+        ],
         "directories": [
     %{~ for idx, directory in var.coreos_directories ~}
           {
@@ -156,6 +184,13 @@ data template_file "ignition" {
       },
       "systemd": {
         "units": [
+    %{~ for idx, disk in var.coreos_disks ~}
+          {
+            "name": "${replace(substr(disk.mount_path, 1, length(disk.mount_path)), "/", "-")}.mount",
+            "enabled": true,
+            "contents": ${jsonencode(data.template_file.data_disk_mount[idx].rendered)}
+          },
+    %{~ endfor ~}
           {
             "name": "${var.container_name}.service",
             "enabled": true,

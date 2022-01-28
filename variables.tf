@@ -28,18 +28,18 @@ variable "container_gid" {
   default = null
 }
 
-variable "image_uri" {
+variable "container_image_uri" {
   description = "Container image tag in the form image:tag."
   type = string
 }
 
-variable "labels" {
+variable "container_labels" {
   description = "Labels to apply to the container."
   type = list(string)
   default = []
 }
 
-variable "ports" {
+variable "container_ports" {
   description = "Ports to expose from the container."
   type =list(object({
     host_port = number
@@ -48,14 +48,14 @@ variable "ports" {
   default = []
 }
 
-variable "environment_variables" {
+variable "container_environment_variables" {
   description = "Additional environment variables to set inside the container."
   type = map(string)
   default = {}
   sensitive = true
 }
 
-variable "volume_binds" {
+variable "container_volume_binds" {
   description = "Volumes to bind in the container."
   type = list(object({
     host_dir = string
@@ -65,14 +65,26 @@ variable "volume_binds" {
   default = []
 }
 
-variable "args" {
+variable "container_args" {
   description = "Arguments to pass to the container when executing podman run."
   type = string
   default = null
   sensitive = true
 }
 
-variable "files" {
+# Avoid non-alphanumeric characters for disk.label and disk.mount_path
+# or the systemd unit naming convention and proper escaping gets complicated
+# https://unix.stackexchange.com/a/345518/412527
+variable "coreos_disks" {
+  type = list(object({
+    device = string
+    label = string
+    mount_path = string
+  }))
+  default = []
+}
+
+variable "coreos_files" {
   description = "Additional files to create on the CoreOS host."
   type = list(object({
     path = string
@@ -87,7 +99,7 @@ variable "files" {
   sensitive = true
 }
 
-variable "directories" {
+variable "coreos_directories" {
   description = "Additional directories to create on the CoreOS host."
   type = list(object({
     path = string
@@ -100,7 +112,7 @@ variable "directories" {
   default = []
 }
 
-variable "systemd_afters" {
+variable "container_systemd_afters" {
   description = "Systemd targets or services to include in After= directives for the container systemd unit."
   type = list(string)
   default = []

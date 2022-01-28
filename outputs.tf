@@ -8,3 +8,7 @@ output "systemd_service_name" {
   description = "The name of the container systemd service file."
   value = "${var.container_name}.service"
 }
+
+output "systemd_service_file" {
+  value = data.template_file.universal_service.rendered
+}
