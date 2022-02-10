@@ -124,8 +124,10 @@ data template_file "ignition" {
     %{~ endif ~}
             },
             "path": "${directory.path}",
-            "overwrite": false,
-            "mode": ${directory.decimal_mode}
+    %{~ if directory.decimal_mode != null ~}
+            "mode": ${directory.decimal_mode},
+    %{~ endif ~}
+            "overwrite": false
           }%{~ if idx + 1 != length(var.coreos_files) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
@@ -150,10 +152,12 @@ data template_file "ignition" {
             },
             "path": "${file.path}",
             "overwrite": true,
+    %{~ if file.decimal_mode != null ~}
+            "mode": ${file.decimal_mode},
+    %{~ endif ~}
             "contents": {
               "source": "data:text/plain;base64,${base64encode(file.contents)}"
-            },
-            "mode": ${file.decimal_mode}
+            }
           },
     %{~ endfor ~}
           {

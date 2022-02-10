@@ -94,12 +94,12 @@ variable "coreos_files" {
   description = "Additional files to create on the CoreOS host."
   type = list(object({
     path = string
-    contents = string
-    decimal_mode = string
+    decimal_mode = optional(string)
     uid = optional(number)
     user_name = optional(string)
     gid = optional(number)
     group_name = optional(string)
+    contents = string
   }))
   default = []
   sensitive = true
@@ -109,7 +109,7 @@ variable "coreos_directories" {
   description = "Additional directories to create on the CoreOS host."
   type = list(object({
     path = string
-    decimal_mode = string
+    decimal_mode = optional(string)
     uid = optional(number)
     user_name = optional(string)
     gid = optional(number)
