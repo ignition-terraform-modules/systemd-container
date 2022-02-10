@@ -72,6 +72,12 @@ variable "container_args" {
   sensitive = true
 }
 
+variable "container_systemd_afters" {
+  description = "Systemd targets or services to include in After= directives for the container systemd unit."
+  type = list(string)
+  default = []
+}
+
 # Avoid non-alphanumeric characters for disk.label and disk.mount_path
 # or the systemd unit naming convention and proper escaping gets complicated
 # https://unix.stackexchange.com/a/345518/412527
@@ -111,10 +117,3 @@ variable "coreos_directories" {
   }))
   default = []
 }
-
-variable "container_systemd_afters" {
-  description = "Systemd targets or services to include in After= directives for the container systemd unit."
-  type = list(string)
-  default = []
-}
-
