@@ -72,8 +72,14 @@ variable "container_args" {
   sensitive = true
 }
 
+variable "container_systemd_user" {
+  description = "The user systemd will run the container under."
+  type = string
+  default = "core"
+}
+
 variable "container_systemd_afters" {
-  description = "Systemd targets or services to include in After= directives for the container systemd unit."
+  description = "Targets or services to include in the After= directives for the container systemd unit."
   type = list(string)
   default = []
 }

@@ -15,6 +15,7 @@ data template_file "universal_service" {
     %{~ endfor ~}
 
     [Service]
+    User=${var.container_systemd_user}
     TimeoutStartSec=0
     ExecStartPre=/bin/podman stop ${var.container_name} --ignore
     ExecStartPre=/bin/podman rm ${var.container_name} --ignore
@@ -162,20 +163,10 @@ data template_file "ignition" {
     %{~ endfor ~}
           {
             "user": {
-    %{~ if var.container_uid != null ~}
-              "id": ${var.container_uid}
-    %{~ endif ~}
-    %{~ if var.container_uid == null && var.container_user != null ~}
-              "name": "${var.container_user}"
-    %{~ endif ~}
+              "name": "${var.container_systemd_user}"
             },
             "group": {
-    %{~ if var.container_gid != null ~}
-              "id": ${var.container_gid}
-    %{~ endif ~}
-    %{~ if var.container_gid  == null && var.container_group != null ~}
-              "name": "${var.container_group}"
-    %{~ endif ~}
+              "name": "${var.container_systemd_user}"
             },
             "path": "/etc/${var.container_name}/${var.container_name}.env",
             "overwrite": true,
