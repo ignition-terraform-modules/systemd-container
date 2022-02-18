@@ -90,6 +90,30 @@ variable "container_systemd_afters" {
   default = []
 }
 
+variable "container_systemd_start_limit_burst" {
+  description = "Units which are started more than burst times within an interval time span are not permitted to start any more."
+  type = number
+  default = 5
+}
+
+variable "container_systemd_start_limit_interval" {
+  description = "Units which are started more than burst times within an interval time span are not permitted to start any more."
+  type = number
+  default = 60
+}
+
+variable "container_systemd_restart_sec" {
+  description = "Configures the time to sleep before restarting a service."
+  type = number
+  default = 30
+}
+
+variable "container_systemd_timeout_start_sec" {
+  description = "Configures the time to wait for start-up."
+  type = number
+  default = 20
+}
+
 # Avoid non-alphanumeric characters for disk.label and disk.mount_path
 # or the systemd unit naming convention and proper escaping gets complicated
 # https://unix.stackexchange.com/a/345518/412527

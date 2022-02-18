@@ -13,10 +13,14 @@ data template_file "universal_service" {
     %{~ for target in var.container_systemd_afters ~}
     After=${target}
     %{~ endfor ~}
+    StartLimitInterval=${var.container_systemd_start_limit_interval}
+    StartLimitBurst=${var.container_systemd_start_limit_burst}
 
     [Service]
     User=${var.container_systemd_user}
-    TimeoutStartSec=0
+    Restart=always
+    RestartSec=${var.container_systemd_restart_sec}
+    TimeoutStartSec=${var.container_systemd_timeout_start_sec}
     ExecStartPre=/bin/podman stop ${var.container_name} --ignore
     ExecStartPre=/bin/podman rm ${var.container_name} --ignore
     ExecStart=/bin/podman run \
