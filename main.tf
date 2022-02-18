@@ -30,6 +30,9 @@ data template_file "universal_service" {
       %{~ for port in var.container_ports ~}
       -p ${port.host_port}:${port.container_port} \
       %{~ endfor ~}
+      %{~ if var.container_pod != null ~}
+      --pod ${var.container_pod} \
+      %{~ endif ~}
       %{~ if local.container_user_or_uid != "" ~}
       --user ${local.container_user_or_uid}%{ if local.container_group_or_gid != "" }:${local.container_group_or_gid}%{ endif } \
       %{~ endif ~}

@@ -72,6 +72,12 @@ variable "container_args" {
   sensitive = true
 }
 
+variable "container_pod" {
+  description = "The pod to run the container in"
+  type = string
+  default = null
+}
+
 variable "container_systemd_user" {
   description = "The user systemd will run the container under."
   type = string
