@@ -10,9 +10,8 @@ data template_file "universal_service" {
     Description=${var.container_name}
     After=network-online.target
     Wants=network-online.target
-    %{~ for target in var.container_systemd_require_afters ~}
+    %{~ for target in var.container_systemd_afters ~}
     After=${target}
-    Requires=${target}
     %{~ endfor ~}
     StartLimitInterval=${var.container_systemd_start_limit_interval}
     StartLimitBurst=${var.container_systemd_start_limit_burst}
