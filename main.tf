@@ -56,8 +56,8 @@ data template_file "data_disk_mount" {
   template = <<-EOM
     [Unit]
     Before=local-fs.target
-#    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
-#    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
+    Requires="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service"
+    After="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service"
 
     [Mount]
     Where=${var.coreos_disks[count.index].mount_path}
