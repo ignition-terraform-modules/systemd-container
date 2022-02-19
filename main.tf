@@ -136,7 +136,7 @@ data template_file "ignition" {
             "mode": ${directory.decimal_mode},
     %{~ endif ~}
             "overwrite": false
-          }%{~ if idx + 1 != length(var.coreos_files) ~},%{~ endif ~}
+          }%{~ if idx + 1 != length(var.coreos_directories) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
         "files": [
