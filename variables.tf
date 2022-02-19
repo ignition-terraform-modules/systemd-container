@@ -84,8 +84,8 @@ variable "container_systemd_user" {
   default = "core"
 }
 
-variable "container_systemd_afters" {
-  description = "Targets or services to include in the After= directives for the container systemd unit."
+variable "container_systemd_require_afters" {
+  description = "Targets or services to include in the After= and Require= directives for the container systemd unit."
   type = list(string)
   default = []
 }

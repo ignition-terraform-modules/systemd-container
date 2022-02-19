@@ -10,8 +10,9 @@ data template_file "universal_service" {
     Description=${var.container_name}
     After=network-online.target
     Wants=network-online.target
-    %{~ for target in var.container_systemd_afters ~}
+    %{~ for target in var.container_systemd_require_afters ~}
     After=${target}
+    Requires=${target}
     %{~ endfor ~}
     StartLimitInterval=${var.container_systemd_start_limit_interval}
     StartLimitBurst=${var.container_systemd_start_limit_burst}
@@ -56,8 +57,8 @@ data template_file "data_disk_mount" {
   template = <<-EOM
     [Unit]
     Before=local-fs.target
-    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
-    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
+#    Requires=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
+#    After=systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service
 
     [Mount]
     Where=${var.coreos_disks[count.index].mount_path}
