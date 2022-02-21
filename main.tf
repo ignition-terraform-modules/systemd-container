@@ -7,44 +7,42 @@ locals {
 data template_file "universal_service" {
   template = <<-EOS
     [Unit]
-    Description=${var.container_name}
+    Description=${var.name} Podman container
     After=network-online.target
     Wants=network-online.target
-    %{~ for target in var.container_systemd_afters ~}
+    %{~ for target in var.systemd_afters ~}
     After=${target}
     %{~ endfor ~}
-    StartLimitInterval=${var.container_systemd_start_limit_interval}
-    StartLimitBurst=${var.container_systemd_start_limit_burst}
+    StartLimitInterval=${var.systemd_start_limit_interval}
+    StartLimitBurst=${var.systemd_start_limit_burst}
 
     [Service]
-    User=${var.container_systemd_user}
+    User=${var.user}
     Restart=always
-    RestartSec=${var.container_systemd_restart_sec}
-    TimeoutStartSec=${var.container_systemd_timeout_start_sec}
-    ExecStartPre=/bin/podman stop ${var.container_name} --ignore
-    ExecStartPre=/bin/podman rm ${var.container_name} --ignore
+    RestartSec=${var.systemd_restart_sec}
+    TimeoutStartSec=${var.systemd_timeout_start_sec}
     ExecStart=/bin/podman run \
-      %{~ for label in var.container_labels ~}
+      %{~ for label in var.labels ~}
       --label ${label} \
       %{~ endfor ~}
-      --env-file /etc/${var.container_name}/${var.container_name}.env \
-      %{~ for volume_bind in var.container_volume_binds ~}
+      --env-file /etc/${var.name}/${var.name}.env \
+      %{~ for volume_bind in var.volumes ~}
       -v ${volume_bind.host_dir}:${volume_bind.container_dir}%{ if volume_bind.options != null }:${volume_bind.options}%{ endif } \
       %{~ endfor ~}
-      %{~ for port in var.container_ports ~}
+      %{~ for port in var.ports ~}
       -p ${port.host_port}:${port.container_port} \
       %{~ endfor ~}
-      %{~ if var.container_pod != null ~}
-      --pod ${var.container_pod} \
+      %{~ if var.pod != null ~}
+      --pod ${var.pod} \
       %{~ endif ~}
       %{~ if local.container_user_or_uid != "" ~}
       --user ${local.container_user_or_uid}%{ if local.container_group_or_gid != "" }:${local.container_group_or_gid}%{ endif } \
       %{~ endif ~}
       --rm \
-      --name ${var.container_name} \
-      ${var.container_image_uri} %{ if var.container_args != null }${var.container_args}%{ endif }
-    ExecStop=-/usr/bin/podman stop ${var.container_name} --ignore
-    ExecStopPost=-/usr/bin/podman rm ${var.container_name} --ignore
+      --replace \
+      --name ${var.name} \
+      ${var.image} %{ if var.args != null }${var.args}%{ endif }
+    ExecStop=-/usr/bin/podman stop ${var.name} --ignore
 
     [Install]
     WantedBy=multi-user.target
@@ -52,16 +50,16 @@ data template_file "universal_service" {
 }
 
 data template_file "data_disk_mount" {
-  count = length(var.coreos_disks)
+  count = length(var.disks)
   template = <<-EOM
     [Unit]
     Before=local-fs.target
-    Requires="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service"
-    After="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.coreos_disks[count.index].label}.service"
+    Requires="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.disks[count.index].label}.service"
+    After="systemd-fsck@dev-disk-by\\x2dpartlabel-${var.disks[count.index].label}.service"
 
     [Mount]
-    Where=${var.coreos_disks[count.index].mount_path}
-    What=/dev/disk/by-partlabel/${var.coreos_disks[count.index].label}
+    Where=${var.disks[count.index].mount_path}
+    What=/dev/disk/by-partlabel/${var.disks[count.index].label}
     Type=xfs
 
     [Install]
@@ -71,8 +69,8 @@ data template_file "data_disk_mount" {
 
 data template_file "container_env" {
     template = <<-EOE
-      %{ for environment_variable in keys(var.container_environment_variables) }
-      ${environment_variable}=${var.container_environment_variables[environment_variable]}
+      %{ for environment_variable in keys(var.environment_variables) }
+      ${environment_variable}=${var.environment_variables[environment_variable]}
       %{ endfor }
     EOE
 }
@@ -87,7 +85,7 @@ data template_file "ignition" {
       },
       "storage": {
         "disks": [
-    %{~ for idx, disk in var.coreos_disks ~}
+    %{~ for idx, disk in var.disks ~}
           {
             "device": "${disk.device}",
             "wipeTable": false,
@@ -99,21 +97,21 @@ data template_file "ignition" {
                 "startMiB": 0
               }
             ]
-          }%{~ if idx + 1 != length(var.coreos_disks) ~},%{~ endif ~}
+          }%{~ if idx + 1 != length(var.disks) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
         "filesystems": [
-    %{~ for idx, disk in var.coreos_disks ~}
+    %{~ for idx, disk in var.disks ~}
           {
             "device": "/dev/disk/by-partlabel/${disk.label}",
             "format": "xfs",
             "wipeFilesystem": false,
             "path": "${disk.mount_path}"
-          }%{~ if idx + 1 != length(var.coreos_disks) ~},%{~ endif ~}
+          }%{~ if idx + 1 != length(var.disks) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
         "directories": [
-    %{~ for idx, directory in var.coreos_directories ~}
+    %{~ for idx, directory in var.directories ~}
           {
             "user": {
     %{~ if directory.uid != null ~}
@@ -136,11 +134,11 @@ data template_file "ignition" {
             "mode": ${directory.decimal_mode},
     %{~ endif ~}
             "overwrite": false
-          }%{~ if idx + 1 != length(var.coreos_directories) ~},%{~ endif ~}
+          }%{~ if idx + 1 != length(var.directories) ~},%{~ endif ~}
     %{~ endfor ~}
         ],
         "files": [
-    %{~ for idx, file in var.coreos_files ~}
+    %{~ for idx, file in var.files ~}
           {
             "user": {
     %{~ if file.uid != null ~}
@@ -170,12 +168,12 @@ data template_file "ignition" {
     %{~ endfor ~}
           {
             "user": {
-              "name": "${var.container_systemd_user}"
+              "name": "${var.user}"
             },
             "group": {
-              "name": "${var.container_systemd_user}"
+              "name": "${var.user}"
             },
-            "path": "/etc/${var.container_name}/${var.container_name}.env",
+            "path": "/etc/${var.name}/${var.name}.env",
             "overwrite": true,
             "contents": {
               "source": "data:text/plain;base64,${base64encode(data.template_file.container_env.rendered)}"
@@ -186,7 +184,7 @@ data template_file "ignition" {
       },
       "systemd": {
         "units": [
-    %{~ for idx, disk in var.coreos_disks ~}
+    %{~ for idx, disk in var.disks ~}
           {
             "name": "${replace(substr(disk.mount_path, 1, length(disk.mount_path)), "/", "-")}.mount",
             "enabled": true,
@@ -194,7 +192,7 @@ data template_file "ignition" {
           },
     %{~ endfor ~}
           {
-            "name": "${var.container_name}.service",
+            "name": "${var.name}.service",
             "enabled": true,
             "contents": ${jsonencode(data.template_file.universal_service.rendered)}
           }

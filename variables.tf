@@ -1,4 +1,4 @@
-variable "container_name" {
+variable "name" {
   description = "The name of the container."
   type = string
 }
@@ -10,7 +10,7 @@ variable "container_user" {
 }
 
 variable "container_uid" {
-  description = "The user id the container will use. Mutually exclusive with container_user."
+  description = "The user id the container will use. Mutually exclusive with user."
   type = number
   default = null
 }
@@ -27,18 +27,18 @@ variable "container_gid" {
   default = null
 }
 
-variable "container_image_uri" {
+variable "image" {
   description = "Container image tag in the form image:tag."
   type = string
 }
 
-variable "container_labels" {
+variable "labels" {
   description = "Labels to apply to the container."
   type = list(string)
   default = []
 }
 
-variable "container_ports" {
+variable "ports" {
   description = "Ports to expose from the container."
   type =list(object({
     host_port = number
@@ -47,14 +47,14 @@ variable "container_ports" {
   default = []
 }
 
-variable "container_environment_variables" {
+variable "environment_variables" {
   description = "Additional environment variables to set inside the container."
   type = map(string)
   default = {}
   sensitive = true
 }
 
-variable "container_volume_binds" {
+variable "volumes" {
   description = "Volumes to bind in the container."
   type = list(object({
     host_dir = string
@@ -64,50 +64,50 @@ variable "container_volume_binds" {
   default = []
 }
 
-variable "container_args" {
+variable "args" {
   description = "Arguments to pass to the container when executing podman run."
   type = string
   default = null
   sensitive = true
 }
 
-variable "container_pod" {
+variable "pod" {
   description = "The pod to run the container in"
   type = string
   default = null
 }
 
-variable "container_systemd_user" {
+variable "user" {
   description = "The user systemd will run the container under."
   type = string
   default = "core"
 }
 
-variable "container_systemd_afters" {
+variable "systemd_afters" {
   description = "Targets or services to include in the After= directives for the container systemd unit."
   type = list(string)
   default = []
 }
 
-variable "container_systemd_start_limit_burst" {
+variable "systemd_start_limit_burst" {
   description = "Units which are started more than burst times within an interval time span are not permitted to start any more."
   type = number
   default = 5
 }
 
-variable "container_systemd_start_limit_interval" {
+variable "systemd_start_limit_interval" {
   description = "Units which are started more than burst times within an interval time span are not permitted to start any more."
   type = number
   default = 60
 }
 
-variable "container_systemd_restart_sec" {
+variable "systemd_restart_sec" {
   description = "Configures the time to sleep before restarting a service."
   type = number
   default = 30
 }
 
-variable "container_systemd_timeout_start_sec" {
+variable "systemd_timeout_start_sec" {
   description = "Configures the time to wait for start-up."
   type = number
   default = 20
@@ -116,7 +116,7 @@ variable "container_systemd_timeout_start_sec" {
 # Avoid non-alphanumeric characters for disk.label and disk.mount_path
 # or the systemd unit naming convention and proper escaping gets complicated
 # https://unix.stackexchange.com/a/345518/412527
-variable "coreos_disks" {
+variable "disks" {
   type = list(object({
     device = string
     label = string
@@ -125,7 +125,7 @@ variable "coreos_disks" {
   default = []
 }
 
-variable "coreos_files" {
+variable "files" {
   description = "Additional files to create on the CoreOS host."
   type = list(object({
     path = string
@@ -140,7 +140,7 @@ variable "coreos_files" {
   sensitive = true
 }
 
-variable "coreos_directories" {
+variable "directories" {
   description = "Additional directories to create on the CoreOS host."
   type = list(object({
     path = string
