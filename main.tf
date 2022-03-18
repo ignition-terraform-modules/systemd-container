@@ -3,11 +3,10 @@ locals {
   container_group_or_gid = "%{ if var.container_group != null }${var.container_group}%{ else }%{ if var.container_gid != null }${var.container_gid}%{ else }%{ endif }%{ endif }"
 }
 
-# Universal systemd service file
-data template_file "universal_service" {
+data template_file "systemd_service" {
   template = <<-EOS
     [Unit]
-    Description=${var.name} Podman container
+    Description=${var.name} podman container
     After=network-online.target
     Wants=network-online.target
     %{~ for target in var.systemd_afters ~}
@@ -43,6 +42,26 @@ data template_file "universal_service" {
       --name ${var.name} \
       ${var.image} %{ if var.args != null }${var.args}%{ endif }
     ExecStop=-/usr/bin/podman stop ${var.name} --ignore
+
+    [Install]
+    WantedBy=multi-user.target
+    EOS
+}
+
+data template_file "systemd_oneshots" {
+  count = length(var.systemd_oneshots)
+  template = <<-EOS
+    [Unit]
+    Description=${var.name} setup ${count.index}
+    After=network-online.target
+    Wants=network-online.target
+    ConditionPathExists=${var.systemd_oneshots[count.index].exec_start_script_path}
+    After=${var.name}.service
+
+    [Service]
+    Type=oneshot
+    User=${var.user}
+    ExecStart=${var.systemd_oneshots[count.index].exec_start_script_path}
 
     [Install]
     WantedBy=multi-user.target
@@ -191,10 +210,17 @@ data template_file "ignition" {
             "contents": ${jsonencode(data.template_file.data_disk_mount[idx].rendered)}
           },
     %{~ endfor ~}
+    %{~ for idx, oneshots in var.systemd_oneshots ~}
+          {
+            "name": "${var.name}-setup-${idx}.service",
+            "enabled": true,
+            "contents": ${jsonencode(data.template_file.systemd_oneshots[idx].rendered)}
+          },
+    %{~ endfor ~}
           {
             "name": "${var.name}.service",
             "enabled": true,
-            "contents": ${jsonencode(data.template_file.universal_service.rendered)}
+            "contents": ${jsonencode(data.template_file.systemd_service.rendered)}
           }
         ]
       }

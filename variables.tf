@@ -113,6 +113,14 @@ variable "systemd_timeout_start_sec" {
   default = 20
 }
 
+variable "systemd_oneshots" {
+  description = "Systemd oneshot services to create."
+  type = list(object({
+    exec_start_script_path = string
+  }))
+  default = []
+}
+
 # Avoid non-alphanumeric characters for disk.label and disk.mount_path
 # or the systemd unit naming convention and proper escaping gets complicated
 # https://unix.stackexchange.com/a/345518/412527

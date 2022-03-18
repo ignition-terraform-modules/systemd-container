@@ -10,5 +10,9 @@ output "systemd_service_name" {
 }
 
 output "systemd_service_file" {
-  value = data.template_file.universal_service.rendered
+  value = data.template_file.systemd_service.rendered
+}
+
+output "systemd_oneshot_files" {
+  value = [for s in data.template_file.systemd_oneshots : s.rendered]
 }
